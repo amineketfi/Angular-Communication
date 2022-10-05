@@ -6,7 +6,9 @@
   <div class='card-body'
        *ngIf='products'>
     <div class='list-group'>
-      <button type='button'
+      <button (click)="onSelected(product)"
+              [ngClass]="{'active':selectedProduct?.id === product?.id}"
+              type='button'
               class='list-group-item'
               *ngFor='let product of products'>
         {{ product.productName }} ({{ product.productCode }})

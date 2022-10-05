@@ -4,16 +4,13 @@
   </div>
   <div class='card-body'>
     <!-- Filter by the Title   -->
-    <div class='row'>
-      <div class='col-md-2'>Filter by:</div>
-      <div class='col-md-4'>
-        <input type='text' [(ngModel)]='listFilter' />
-      </div>
-    </div>
-    <div class='row' [hidden]='!listFilter'>
-      <div class='col-md-10'>
-        <h4>Filtered by: {{listFilter}}</h4>
-      </div>
+    <div class="row">
+      <pm-criteria #filterCriteria class="col-mid-10"
+          [displayDetail]="includeDetail"
+          [hitCount]="filteredProducts.length"
+          (valueChange)="onValueChanges($event)">
+
+      </pm-criteria>
     </div>
     <div class='table-responsive'>
       <table class='table' *ngIf='products && products.length'>

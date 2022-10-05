@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 
-import { catchError, Observable, of, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, map, Observable, of, Subject, tap, throwError } from 'rxjs';
 
 import { IProduct } from './product';
 
@@ -10,13 +10,28 @@ import { IProduct } from './product';
 })
 export class ProductService {
   private productsUrl = 'api/products';
+  // // property to hold the current selected product ==> using change detection for notification
+  // currentProduct!: IProduct | null;
+
+  // Using the subject to send notiofication
+  private selectedProductSource = new BehaviorSubject<IProduct | null>(null);
+  selectedProductChanges$ = this.selectedProductSource.asObservable();
+
+  // method used to emit new selected product from components
+  onProductChanges(selectedProduct: IProduct | null) {
+    this.selectedProductSource.next(selectedProduct);
+  }
 
   constructor(private http: HttpClient) { }
+  private products?: IProduct[];
 
   getProducts(): Observable<IProduct[]> {
+    if (this.products)
+      return of(this.products)
     return this.http.get<IProduct[]>(this.productsUrl)
       .pipe(
         tap(data => console.log(JSON.stringify(data))),
+        tap(data => this.products = data),
         catchError(this.handleError)
       );
   }
@@ -24,6 +39,12 @@ export class ProductService {
   getProduct(id: number): Observable<IProduct> {
     if (id === 0) {
       return of(this.initializeProduct());
+    }
+    if(this.products) {
+      const foundItem = this.products.find(item => item.id === id)
+      if(foundItem) {
+        return of(foundItem)
+      }
     }
     const url = `${this.productsUrl}/${id}`;
     return this.http.get<IProduct>(url)
@@ -48,6 +69,14 @@ export class ProductService {
     return this.http.delete<IProduct>(url, { headers })
       .pipe(
         tap(() => console.log('deleteProduct: ' + id)),
+        tap(() => {
+          const foundIndex = this.products?.findIndex(item => item.id === id);
+          if (foundIndex && foundIndex > -1) {
+            this.products?.splice(foundIndex, 1)
+            // this.currentProduct = null; ==> Change detection
+            this.selectedProductSource.next(null);
+          }
+        }),
         catchError(this.handleError)
       );
   }
@@ -57,6 +86,11 @@ export class ProductService {
     return this.http.post<IProduct>(this.productsUrl, product, { headers })
       .pipe(
         tap(createdProduct => console.log('createProduct: ' + JSON.stringify(createdProduct))),
+        tap(data => {
+          this.products?.push(data)
+          // this.currentProduct = data; ==> Change ditection
+          this.selectedProductSource.next(data);
+        }),
         catchError(this.handleError)
       );
   }
